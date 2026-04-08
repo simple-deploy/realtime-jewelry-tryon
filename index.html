@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time AR Jewelry Try-On</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            background-color: #121212;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            margin-bottom: 5px;
+        }
+
+        p {
+            color: #aaaaaa;
+            margin-bottom: 20px;
+        }
+
+        .container {
+            position: relative;
+            width: 640px;
+            height: 480px;
+            margin: 0 auto;
+            border: 2px solid #333;
+            border-radius: 12px;
+            overflow: hidden;
+            background-color: #000;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        /* The video feed must mirror the user */
+        video {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+        }
+
+        /* Canvas is overlaid on top of video, also mirrored to match */
+        canvas {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+            transform: scaleX(-1);
+        }
+
+        .controls {
+            margin-top: 25px;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            background-color: #e0ac1c;
+            background: linear-gradient(135deg, #FFD700 0%, #D4AF37 100%);
+            color: #111;
+            border: none;
+            border-radius: 8px;
+            transition: opacity 0.2s;
+        }
+
+        button:disabled {
+            background: #555;
+            color: #888;
+            cursor: not-allowed;
+        }
+
+        button:hover:not(:disabled) {
+            opacity: 0.9;
+        }
+
+        #status {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #00FFB2;
+        }
+
+        .preset-img {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: border-color 0.2s, transform 0.2s;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .preset-img:hover {
+            transform: scale(1.05);
+        }
+
+        .preset-img.selected {
+            border-color: #00FFB2;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Real-Time Jewelry Try On App</h1>
+    
+
+    <div class="container">
+        <!-- Live Webcam Feed -->
+        <video id="webcam" autoplay playsinline></video>
+        <!-- Canvas for drawing jewelry -->
+        <canvas id="output_canvas"></canvas>
+    </div>
+
+    <div class="controls">
+        <button id="cameraBtn" disabled>Turn On Camera</button>
+        <div id="status">Loading AI Model... Please wait.</div>
+    </div>
+
+    <div class="controls" style="margin-top: 15px;">
+        <label style="margin-right: 10px;">Jewelry Type:</label>
+        <select id="jewelryType" style="padding: 5px; font-size: 16px; border-radius: 4px;">
+            <option value="earring">Earring</option>
+            <option value="necklace">Necklace</option>
+            <option value="bracelet">Bracelet</option>
+        </select>
+    </div>
+
+    <div class="controls" style="margin-top: 15px;">
+        <label>Upload Jewelry Image:</label>
+        <input type="file" id="jewelryUpload" accept="image/*" style="margin-left: 10px;">
+    </div>
+
+    <div class="controls" id="presetContainer" style="margin-top: 15px;">
+        <label style="display: block; margin-bottom: 10px;">Or select a predefined jewelry:</label>
+        <div id="presetImages" style="display: flex; justify-content: center; gap: 10px;">
+            <!-- Images will be injected dynamically via JS -->
+        </div>
+    </div>
+
+    <!-- Sample Jewelry Assets (Hidden, used by JS Canvas) -->
+    <!-- Default fallback image to prevent 404 (transparent pixel) -->
+    <img id="earring_img"
+        src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
+        alt="Earring" style="display:none;" crossorigin="anonymous">
+
+    <script type="module" src="ar-demo.js"></script>
+</body>
+
+</html>
