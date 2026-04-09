@@ -20,7 +20,6 @@ const presetImages = document.getElementById("presetImages");
 const presets = {
     earring: ["images/earring1.png", "images/earring2.png"],
     necklace: ["images/necklace1.png", "images/necklace2.png"],
-    bracelet: ["images/brac1.png", "images/brac2.png"]
 };
 
 // Function to update preset images based on jewelry type
@@ -71,26 +70,69 @@ const videoHeight = 480;
 
 // Step 1: Initialize the FaceLandmarker API
 async function initializeFaceLandmarker() {
-    // FilesetResolver helps load the WebAssembly (WASM) models needed to run the AI in browser
-    const filesetResolver = await FilesetResolver.forVisionTasks(
-        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
-    );
+    try {
+        statusText.innerText = "Setting up AI environment...";
 
-    // Create the landmarker
-    faceLandmarker = await FaceLandmarker.createFromOptions(filesetResolver, {
-        baseOptions: {
-            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
-            delegate: "GPU" // Uses WebGL for hardware acceleration
-        },
-        outputFaceBlendshapes: true,
-        runningMode: "VIDEO", // Optimized for live camera feeds
-        numFaces: 1 // Assuming 1 person is trying on jewelry at a time
-    });
+        // FilesetResolver helps load the WebAssembly (WASM) models needed to run the AI in browser
+        const filesetResolver = await FilesetResolver.forVisionTasks(
+            "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
+        );
 
-    // Model is downloaded and ready!
-    statusText.innerText = "Model Loaded. Ready to turn on camera.";
-    cameraBtn.disabled = false;
-    cameraBtn.innerText = "Turn On Camera";
+        statusText.innerText = "Downloading AI Model (0%)... Please wait, this is ~10MB.";
+
+        const response = await fetch("https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task");
+        if (!response.ok) throw new Error("Network response was not ok");
+
+        const contentLength = response.headers.get('content-length');
+        const total = parseInt(contentLength, 10);
+        let loaded = 0;
+
+        const reader = response.body.getReader();
+        const chunks = [];
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(value);
+            loaded += value.length;
+            if (total) {
+                const percent = Math.round((loaded / total) * 100);
+                statusText.innerText = `Downloading AI Model (${percent}%)...`;
+            } else {
+                const mb = (loaded / (1024 * 1024)).toFixed(1);
+                statusText.innerText = `Downloading AI Model (${mb} MB)...`;
+            }
+        }
+
+        statusText.innerText = "Initializing AI Model...";
+
+        const result = new Uint8Array(loaded);
+        let offset = 0;
+        for (let chunk of chunks) {
+            result.set(chunk, offset);
+            offset += chunk.length;
+        }
+
+        // Create the landmarker
+        faceLandmarker = await FaceLandmarker.createFromOptions(filesetResolver, {
+            baseOptions: {
+                modelAssetBuffer: result,
+                delegate: "GPU" // Uses WebGL for hardware acceleration
+            },
+            outputFaceBlendshapes: true,
+            runningMode: "VIDEO", // Optimized for live camera feeds
+            numFaces: 1 // Assuming 1 person is trying on jewelry at a time
+        });
+
+        // Model is downloaded and ready!
+        statusText.innerText = "Model Loaded. Ready to turn on camera.";
+        cameraBtn.disabled = false;
+        cameraBtn.innerText = "Turn On Camera";
+    } catch (error) {
+        statusText.innerText = "Error loading AI model: " + error.message;
+        statusText.style.color = "#ff4d4d"; // Show error in red
+        console.error("Initialization error:", error);
+    }
 }
 
 // Call initialization immediately
