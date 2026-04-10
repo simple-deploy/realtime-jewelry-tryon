@@ -222,6 +222,7 @@ function drawEarrings(faceLandmarksArray) {
     // Head proximity scaling heuristic based on eye distance
     const leftEye = landmarks[33];
     const rightEye = landmarks[263];
+    const nose = landmarks[1]; // Tip of the nose
     const eyeDist = Math.abs((rightEye.x - leftEye.x) * canvasElement.width);
     const scaleFactor = eyeDist / 120; // 120 is average pixel distance at normal sitting range
 
@@ -243,10 +244,24 @@ function drawEarrings(faceLandmarksArray) {
             const baseSize = 80;
             const finalSize = baseSize * scaleFactor;
 
+            // Calculate yaw heuristic to detect head rotation and occlusion
+            const dxLeft = Math.abs(nose.x - leftEye.x);
+            const dxRight = Math.abs(nose.x - rightEye.x);
+
+            // Hide the earring on the side of the head that is rotated away
+            // If the nose is very close to the left eye, head is looking left (left ear is hidden on the back)
+            const leftEarVisible = dxLeft > dxRight * 0.4;
+            // If the nose is very close to the right eye, head is looking right (right ear is hidden)
+            const rightEarVisible = dxRight > dxLeft * 0.4;
+
             // Draw left earring
-            canvasCtx.drawImage(earringImg, lx - (finalSize / 2), ly, finalSize, finalSize);
+            if (leftEarVisible) {
+                canvasCtx.drawImage(earringImg, lx - (finalSize / 2), ly, finalSize, finalSize);
+            }
             // Draw right earring
-            canvasCtx.drawImage(earringImg, rx - (finalSize / 2), ry, finalSize, finalSize);
+            if (rightEarVisible) {
+                canvasCtx.drawImage(earringImg, rx - (finalSize / 2), ry, finalSize, finalSize);
+            }
         }
     } else if (type === "necklace") {
         // Point 152 is the bottom of the chin
